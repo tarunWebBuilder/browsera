@@ -1,0 +1,11 @@
+FROM node:20-alpine
+
+WORKDIR /app
+COPY scraper/package*.json scraper/pnpm-lock.yaml* ./scraper/ ./
+RUN npm install --legacy-peer-deps
+
+COPY scraper/ ./
+ENV NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "run", "dev"]

@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+    # If you need Xvfb for Playwright headless display, playwright base already includes deps.
+
+  frontend:
+    build:
+      context: .
+    # Dockerfile for frontend is at ./frontend/Dockerfile; adjust if path differs
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: http://backend:8000
+    depends_on:
+      - backend
