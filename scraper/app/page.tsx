@@ -1,483 +1,379 @@
-"use client";
+import Link from "next/link";
+import {
+  Show,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs";
+import {
+  ArrowRight,
+  Bot,
+  Boxes,
+  Database,
+  Globe,
+  Play,
+  Rows3,
+} from "lucide-react";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Play, ScanSearch, CalendarRange, Globe } from "lucide-react";
+const heroVideoUrl = "https://www.youtube.com/embed/YOUR_VIDEO_ID";
 
-type Workflow = {
-  id: string;
-  name: string;
-};
-
-export default function HomePage() {
-  const router = useRouter();
-  const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    console.log("document.cookie:", document.cookie)
-
-    // Optional: extract auth-token value
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("auth-token="))
-      ?.split("=")[1]
-
-    console.log("auth-token:", token)
-    async function fetchWorkflows() {
-      try {
-        const headers: Record<string, string> = {
-          Accept: "application/json",
-        }
-
-        if (token) {
-          headers.Authorization = `Bearer ${token}`
-        }
-
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/workflow`, {
-          method: "GET",
-          credentials: "include", // ✅ REQUIRED for cookies
-          headers,
-        })
-
-        if (!res.ok) {
-          console.log("ahh hell o");
-        }
-
-        const data = await res.json();
-        setWorkflows(data);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchWorkflows();
-  }, [router]);
-
-  return (
-    <main className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <h1 className="text-xl font-semibold text-orange-600">
-            My Workflows
-          </h1>
-
-          <Button
-            onClick={() => router.push("/workflow/new")}
-            className="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
-          >
-            Create Workflow
-          </Button>
-        </div>
-      </header>
-
-      {/* Content */}
-      <section className="mx-auto max-w-6xl px-6 py-8">
-        {loading ? (
-          <p className="text-gray-500">Loading workflows...</p>
-        ) : workflows.length === 0 ? (
-          <EmptyState  />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {workflows.map((workflow) => (
-              <div
-                key={workflow.id}
-                className="rounded-xl border p-4 hover:shadow-sm"
-              >
-                <h2 className="font-medium text-gray-900">{workflow.name}</h2>
-
-                <button
-                  onClick={() => router.push(`/workflow/${workflow.id}`)}
-                  className="mt-3 text-sm font-medium text-orange-600 hover:underline"
-                >
-                  Open →
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-    </main>
-  );
-}
-
-
-
-const WORKFLOW_TEMPLATES = [
-  {
-    id: "delhi-hc-judgments",
-    name: "Delhi HC Judgments by Date",
-    description: "Date range + captcha text solve",
-    icon: CalendarRange,
-    defaults: {
-      url: "https://delhihighcourt.nic.in/app/judgement-dates-wise",
-      solveCaptcha: true,
-      captchaType: "number",
-      selectors: {
-        formFields: { "#from_date": "01-01-1976", "#to_date": "04-01-2026" },
-        submitSelector: "#menu3 > div.col-12.col-sm-12.col-md-12.col-xl-4 > button",
-        rowsSelector: "#registrarsTableValue tbody tr",
-        captchaTextSelector: "#captcha-code",
-        captchaInputSelector: "#captchaInput",
-      },
-    },
-  }
+const tabs = [
+  "Browser tool for agents",
+  "Workflow automation",
+  "Web scraping",
 ];
 
-function EmptyState() {
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [formValues, setFormValues] = useState<any>(null);
-  const [scanUrl, setScanUrl] = useState("");
-  const [isScanning, setIsScanning] = useState(false);
-  const [foundSelectors, setFoundSelectors] = useState<string[]>([]);
-  const [dateFields, setDateFields] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isStarting, setIsStarting] = useState(false);
+const featureCards = [
+  {
+    title: "Browser-native execution",
+    copy:
+      "Run real browser sessions for forms, clicks, waits, pagination, and session-aware workflows.",
+    icon: Globe,
+  },
+  {
+    title: "Structured extraction",
+    copy:
+      "Capture tables, selectors, and repeated fields into clean rows your team can actually use.",
+    icon: Rows3,
+  },
+  {
+    title: "Operator-grade orchestration",
+    copy:
+      "Chain browsing, enrichment, exports, and integrations inside one repeatable automation surface.",
+    icon: Bot,
+  },
+];
 
- const [sessionId, setSessionId] = useState<string | null>(null);
-  const handleSelectTemplate = (tplId: string) => {
-    const tpl = WORKFLOW_TEMPLATES.find((t) => t.id === tplId);
-    if (!tpl) return;
-    setSelectedTemplate(tplId);
-    setFormValues(tpl.defaults);
-    const templateFields = tpl.defaults?.selectors?.formFields || {};
-    const templateDateFields = Object.keys(templateFields)
-      .filter((key) => key.includes("from_date") || key.includes("to_date"))
-      .map((selector) => ({
-        selector,
-        placeholder: selector.includes("from_date") ? "From date" : "To date",
-        label: selector.includes("from_date") ? "from_date" : "to_date",
-      }));
-    setDateFields(templateDateFields);
-    setError(null);
-  };
+const footerLinks = {
+  Product: ["Platform", "APIs & SDKs", "Changelog", "Docs"],
+  Company: ["About", "Careers", "Partner with us", "Trust & Security"],
+  Developers: ["Blog", "Github", "Status", "Examples"],
+};
 
-  const updateField = (path: string, value: any) => {
-    setFormValues((prev: any) => {
-      const next = { ...(prev || {}) };
-      const segments = path.split(".");
-      let ref = next;
-      for (let i = 0; i < segments.length - 1; i++) {
-        const key = segments[i];
-        ref[key] = ref[key] || {};
-        ref = ref[key];
-      }
-      ref[segments[segments.length - 1]] = value;
-      return next;
-    });
-  };
-
-  const handleScan = async () => {
-    if (!scanUrl) {
-      setError("Enter a URL to scan");
-      return;
-    }
-    setIsScanning(true);
-    setError(null);
-    try {
-      console.log('opeinng browser');
-      
-      const openResp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/run-node`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          actionId: "openBrowser",
-          inputs: {},
-          config: {},
-        }),
-      });
-      console.log('success');
-      
-      const openData = await openResp.json();
-      console.log(openData);
-      
-      if (!openResp.ok || openData?.status === "failed") {
-        throw new Error(openData?.error || openData?.detail || "Failed to open browser");
-      }
-      const sessionId = openData?.result?.sessionId;
-      if (!sessionId) {
-        throw new Error("No sessionId returned from openBrowser");
-      }
-   setSessionId(sessionId);
-      const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/run-node`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          actionId: "scanWebPage",
-          inputs: { url: scanUrl, includeForms: true },
-          config: { sessionId },
-        }),
-      });
-      const data = await resp.json();
-      console.log(data, 'this is scanned web page');
-      
-      if (!resp.ok) throw new Error(data.error || data.detail || "Scan failed");
-      const selectors: string[] =
-        data?.result?.forms?.flatMap((f: any) => f.inputs?.map((i: any) => i.selector))?.filter(Boolean) || [];
-      setFoundSelectors(selectors);
-      const firstForm = data?.result?.forms?.[0];
-      const firstTable = data?.result?.tables?.[0];
-      const inputs = firstForm?.inputs || [];
-      const isDateField = (input: any) => {
-        const name = (input?.name || "").toLowerCase();
-        const id = (input?.id || "").toLowerCase();
-        const placeholder = (input?.placeholder || "").toLowerCase();
-        return (
-          name.includes("from_date") ||
-          name.includes("to_date") ||
-          id.includes("from_date") ||
-          id.includes("to_date") ||
-          placeholder.includes("from date") ||
-          placeholder.includes("to date")
-        );
-      };
-      const dateInputs = inputs.filter(isDateField);
-      const visibleInputs = dateInputs.length
-        ? dateInputs
-        : inputs.filter((input: any) => (input?.type || "").toLowerCase() !== "hidden");
-      const formFields = visibleInputs.reduce((acc: Record<string, string>, input: any) => {
-        if (!input?.selector) return acc;
-        acc[input.selector] = "";
-        return acc;
-      }, {});
-      const dateFieldsForUi = dateInputs.map((input: any) => ({
-        selector: input.selector,
-        placeholder: input.placeholder || input.name || "Date",
-        label: input.name || input.id || "",
-      }));
-      setDateFields(dateFieldsForUi);
-      const captchaInput = inputs.find((input: any) => {
-        const name = (input?.name || "").toLowerCase();
-        const id = (input?.id || "").toLowerCase();
-        return name.includes("captcha") || id.includes("captcha");
-      });
-      const captchaTypes: string[] = data?.result?.captchaTypes || [];
-      const captchaSelectors = data?.result?.captchaSelectors || {};
-      const preferredCaptcha =
-        captchaTypes.find((t) => ["recaptcha_v3", "recaptcha_v2_invisible", "recaptcha_v2", "hcaptcha", "turnstile"].includes(t)) ||
-        captchaTypes.find((t) => ["math", "number", "text", "image", "normal"].includes(t)) ||
-        "";
-      const nextValues = {
-        url: scanUrl,
-        solveCaptcha: captchaTypes.length > 0,
-        captchaType: preferredCaptcha,
-        selectors: {
-          formFields,
-          submitSelector: firstForm?.submitSelector || "",
-          rowsSelector: firstTable?.selector || "",
-          captchaTextSelector: captchaSelectors?.textSelector || "",
-          captchaInputSelector: captchaSelectors?.inputSelector || captchaInput?.selector || "",
-        },
-      };
-      setFormValues(nextValues);
-    } catch (err: any) {
-      setError(err.message || "Scan failed");
-    } finally {
-      setIsScanning(false);
-    }
-  };
-
-  const handleStart = async () => {
-    setIsStarting(true);
-    setError(null);
-    try {
-         if (!formValues?.url) {
-        throw new Error("Missing target URL");
-      }
-      const inputs = {
-        url: formValues.url,
-        selectors: formValues.selectors || {},
-        solveCaptcha: formValues.solveCaptcha,
-        captchaType: formValues.captchaType,
-      };
-      const config = sessionId ? { sessionId } : {};
-      const response = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + "/run-node", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          actionId: "solveAndPaginateHtml",
-          inputs,
-          config,
-          label: "solveAndPaginateHtml",
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok || data?.status === "failed") {
-        throw new Error(data?.error || data?.detail || "Failed to start");
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to start");
-    } finally {
-      setIsStarting(false);
-    }
-  };
+export default function LandingPage() {
   return (
-    <div className="flex flex-col gap-6 rounded-xl border border-dashed p-6 w-full">
-      <p className="text-center text-gray-400 text-sm uppercase tracking-[0.2em]">Workflow templates</p>
+    <main className="min-h-screen overflow-x-hidden bg-[#f7f4ef] text-black">
+      <div className="bg-[linear-gradient(rgba(0,0,0,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.06)_1px,transparent_1px)] bg-[size:88px_88px]">
+        <section className="mx-auto max-w-[1600px] px-4 pb-16 pt-4 sm:px-6 lg:px-8">
+          <header className="sticky top-0 z-50 border border-black bg-[#f7f4ef]/95 backdrop-blur">
+            <div className="grid items-center gap-4 px-5 py-4 lg:grid-cols-[220px_1fr_260px]">
+              <Link href="/" className="text-3xl font-semibold tracking-tight">
+                Browsera
+              </Link>
 
-      <div className="space-y-3">
-        {WORKFLOW_TEMPLATES.map((tpl) => {
-          const Icon = tpl.icon || Play;
-          const active = selectedTemplate === tpl.id;
-          return (
-            <button
-              key={tpl.id}
-              onClick={() => handleSelectTemplate(tpl.id)}
-              className={`w-full flex items-center gap-3 rounded-lg border px-4 py-4 text-left transition 
-              ${active ? "border-orange-500 bg-[var(--card)] shadow-md" : "border-[var(--border)] bg-[var(--panel)] hover:border-orange-500"}`}
-            >
-              <div className={`flex h-10 w-10 items-center justify-center rounded-full ${active ? "bg-orange-600" : "bg-[var(--panel-alt)]"}`}>
-                <Icon size={18} className={active ? "text-black" : "text-[var(--muted)]"} />
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-[var(--text)]">{tpl.name}</div>
-                <div className="text-xs text-[var(--muted)]">{tpl.description}</div>
-              </div>
-              {active && (
-                <span className="rounded-full bg-orange-600 px-3 py-1 text-xs font-semibold text-black">Selected</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+              <nav className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-medium">
+                <a href="#platform" className="hover:underline">
+                  Platform
+                </a>
+                <a href="#automation" className="hover:underline">
+                  Automation
+                </a>
+                <a href="#developers" className="hover:underline">
+                  Developers
+                </a>
+                <a href="#footer" className="hover:underline">
+                  Docs
+                </a>
+              </nav>
 
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 space-y-2">
-        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
-          <ScanSearch size={16} /> Auto-scan a page for form fields
-        </div>
-        <div className="flex flex-col gap-2 md:flex-row">
-          <input
-            className="flex-1 rounded border border-border bg-(--panel-alt) px-3 py-2 text-sm text-(--text)"
-            placeholder="https://example.com"
-            value={scanUrl}
-            onChange={(e) => setScanUrl(e.target.value)}
-          />
-          <button
-            onClick={handleScan}
-            disabled={isScanning}
-            className="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-black hover:bg-orange-500 disabled:opacity-60"
-          >
-            {isScanning ? "Scanning..." : "Scan page"}
-          </button>
-        </div>
-        {foundSelectors.length > 0 && (
-          <div className="text-xs text-muted">
-            Found selectors:
-            <div className="mt-1 flex flex-wrap gap-1">
-              {foundSelectors.slice(0, 12).map((sel) => (
-                <span
-                  key={sel}
-                  onClick={() => updateField("selectors.rowsSelector", sel)}
-                  className="cursor-pointer rounded bg-(--panel-alt) px-2 py-1 text-(--text)"
-                  title="Click to set as rowsSelector"
-                >
-                  {sel}
-                </span>
-              ))}
-              {foundSelectors.length > 12 && <span className="px-2 py-1 text-gray-500">+ more</span>}
+              <div className="flex items-center justify-end gap-3">
+                <Show when="signed-out">
+                  <SignInButton mode="modal">
+                    <button className="cursor-pointer text-sm font-medium hover:underline">
+                      Sign in
+                    </button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <button className="inline-flex cursor-pointer items-center justify-center bg-[#f53d00] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#d63600]">
+                      Get Started
+                    </button>
+                  </SignUpButton>
+                </Show>
+                <Show when="signed-in">
+                  <Link href="/dashboard" className="text-sm font-medium hover:underline">
+                    Dashboard
+                  </Link>
+                  <UserButton />
+                </Show>
+              </div>
             </div>
-          </div>
-        )}
-        {error && <div className="text-xs text-red-500">{error}</div>}
-      </div>
+          </header>
 
-      {formValues && (
-        <div className="rounded-lg border border-border bg-(--panel) p-4 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-(--text)">
-            <Play size={16} /> Configure
-          </div>
+          <div className="border-x border-b border-black bg-[#f7f4ef]">
+            <div className="grid gap-10 px-6 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:px-12 lg:py-16">
+              <div className="max-w-4xl">
+                <div className="inline-flex items-center gap-2 border border-black bg-white px-3 py-2 text-xs font-medium uppercase tracking-[0.24em]">
+                  <Boxes className="h-3.5 w-3.5" />
+                  AI browser automation platform
+                </div>
 
-          <input
-            className="w-full rounded border border-border bg-(--panel-alt) px-3 py-2 text-sm text-(--text)"
-            placeholder="Target URL"
-            value={formValues.url || ""}
-            onChange={(e) => updateField("url", e.target.value)}
-          />
+                <h1 className="mt-6 max-w-4xl text-5xl font-medium leading-[0.92] tracking-[-0.06em] sm:text-6xl lg:text-[5.5rem]">
+                  Anything you do with a web browser,
+                  <br />
+                  you can do with Browsera.
+                </h1>
 
-          {dateFields.length > 0 && (
-            <div className="grid gap-2 md:grid-cols-2">
-              {dateFields.map((input: any) => (
-                <div key={input.selector} className="flex flex-col gap-1">
-                  <input
-                    type="date"
-                    className="w-full rounded border border-border bg-(--panel-alt) px-3 py-2 text-sm text-(--text)"
-                    placeholder={input.placeholder || "Date"}
-                    value={formValues.selectors?.formFields?.[input.selector] || ""}
-                    onChange={(e) => updateField(`selectors.formFields.${input.selector}`, e.target.value)}
-                  />
-                  <div className="text-[11px] text-[var(--muted)]">
-                    Selector: {input.selector}
+                <p className="mt-6 max-w-2xl text-lg leading-8 text-black/70">
+                  Browsera is built for structured web data extraction and RPA. Run
+                  browser sessions, detect selectors, solve dynamic flows, and export
+                  usable data without stitching brittle scripts together.
+                </p>
+
+                <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                  <Show when="signed-out">
+                    <SignUpButton mode="modal">
+                      <button className="inline-flex cursor-pointer items-center justify-center gap-2 bg-[#f53d00] px-6 py-4 text-base font-semibold text-white transition hover:bg-[#d63600]">
+                        Get started
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </SignUpButton>
+                    <SignInButton mode="modal">
+                      <button className="inline-flex cursor-pointer items-center justify-center border border-black bg-white px-6 py-4 text-base font-semibold hover:bg-black hover:text-white">
+                        Sign in
+                      </button>
+                    </SignInButton>
+                  </Show>
+                  <Show when="signed-in">
+                    <Link
+                      href="/dashboard"
+                      className="inline-flex items-center justify-center gap-2 bg-[#f53d00] px-6 py-4 text-base font-semibold text-white transition hover:bg-[#d63600]"
+                    >
+                      Launch dashboard
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Show>
+                </div>
+              </div>
+
+              <div className="border border-black bg-white p-3">
+                <div className="border border-black bg-black">
+                  <div className="flex items-center justify-between border-b border-white/20 px-4 py-3 text-xs uppercase tracking-[0.18em] text-white/70">
+                    <span>Live product demo</span>
+                    <span>Youtube embed</span>
                   </div>
+                  <div className="aspect-video w-full">
+                    <iframe
+                      className="h-full w-full"
+                      src={heroVideoUrl}
+                      title="Browsera demo video"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <div className="border border-black bg-[#f7f4ef] p-3 text-sm">
+                    Open browser
+                  </div>
+                  <div className="border border-black bg-[#f7f4ef] p-3 text-sm">
+                    Scan selectors
+                  </div>
+                  <div className="border border-black bg-[#f7f4ef] p-3 text-sm">
+                    Export rows
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid border-t border-black lg:grid-cols-3">
+              {tabs.map((tab, index) => (
+                <div
+                  key={tab}
+                  className={`border-black px-8 py-6 text-2xl tracking-tight ${
+                    index === 0
+                      ? "bg-[#2d2725] text-white lg:border-r"
+                      : index === 1
+                        ? "border-t bg-[#f7f4ef] lg:border-r lg:border-t-0"
+                        : "border-t bg-[#f7f4ef] lg:border-t-0"
+                  }`}
+                >
+                  {tab}
                 </div>
               ))}
             </div>
-          )}
-
-
-          <input
-            className="w-full rounded border border-border bg-(--panel-alt) px-3 py-2 text-sm text-[var(--text)]"
-            placeholder="Submit selector"
-            value={formValues.selectors?.submitSelector || ""}
-            onChange={(e) => updateField("selectors.submitSelector", e.target.value)}
-          />
-          <input
-            className="w-full rounded border border-border bg-[var(--panel-alt)] px-3 py-2 text-sm text-[var(--text)]"
-            placeholder="Rows selector"
-            value={formValues.selectors?.rowsSelector || ""}
-            onChange={(e) => updateField("selectors.rowsSelector", e.target.value)}
-          />
-          <input
-            className="w-full rounded border border-[var(--border)] bg-[var(--panel-alt)] px-3 py-2 text-sm text-[var(--text)]"
-            placeholder="Captcha text selector"
-            value={formValues.selectors?.captchaTextSelector || ""}
-            onChange={(e) => updateField("selectors.captchaTextSelector", e.target.value)}
-          />
-          <input
-            className="w-full rounded border border-[var(--border)] bg-[var(--panel-alt)] px-3 py-2 text-sm text-[var(--text)]"
-            placeholder="Captcha input selector"
-            value={formValues.selectors?.captchaInputSelector || ""}
-            onChange={(e) => updateField("selectors.captchaInputSelector", e.target.value)}
-          />
-
-          <div className="flex gap-2">
-            <label className="flex items-center gap-2 text-sm text-[var(--text)]">
-              <input
-                type="checkbox"
-                checked={!!formValues.solveCaptcha}
-                onChange={(e) => updateField("solveCaptcha", e.target.checked)}
-              />
-              Solve captcha
-            </label>
-            <input
-              className="w-full rounded border border-[var(--border)] bg-[var(--panel-alt)] px-3 py-2 text-sm text-[var(--text)]"
-              placeholder="Captcha type (e.g., number)"
-              value={formValues.captchaType || ""}
-              onChange={(e) => updateField("captchaType", e.target.value)}
-            />
           </div>
+        </section>
 
-          <div className="text-xs text-[var(--muted)] bg-[var(--panel-alt)] p-2 rounded">
-            <pre className="whitespace-pre-wrap">
-              {JSON.stringify(formValues, null, 2)}
-            </pre>
+        <section id="platform" className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+          <div className="grid border border-black bg-white lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="border-b border-black p-8 lg:border-b-0 lg:border-r lg:p-12">
+              <h2 className="max-w-2xl text-4xl font-medium leading-tight tracking-[-0.04em] sm:text-5xl">
+                A browser base layer for operators, agents, and teams that need
+                repeatable web actions.
+              </h2>
+              <div className="mt-8 space-y-6 text-lg leading-8 text-black/72">
+                <p>
+                  Browsera sits between manual web work and fragile scripts. It gives
+                  you a product surface for websites that do not expose clean APIs.
+                </p>
+                <p>
+                  That means structured extraction, workflow automation, form handling,
+                  and browser-driven RPA from one place.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-8 lg:p-12">
+              <ul className="space-y-7 text-lg leading-8 text-black/76">
+                <li className="flex gap-4">
+                  <span className="mt-3 h-2.5 w-2.5 bg-black" />
+                  Detect forms, fields, and selectors directly from live pages.
+                </li>
+                <li className="flex gap-4">
+                  <span className="mt-3 h-2.5 w-2.5 bg-black" />
+                  Run human-like browser flows for scraping, navigation, and task automation.
+                </li>
+                <li className="flex gap-4">
+                  <span className="mt-3 h-2.5 w-2.5 bg-black" />
+                  Export structured outputs into files, APIs, and downstream storage systems.
+                </li>
+              </ul>
+
+              <div className="mt-10 grid gap-px border border-black bg-black sm:grid-cols-2">
+                <div className="bg-[#f7f4ef] p-5">
+                  <p className="text-sm font-medium">Structured outputs</p>
+                  <p className="mt-2 text-sm text-black/65">
+                    CSV, Excel, JSON, APIs, MongoDB, and Milvus.
+                  </p>
+                </div>
+                <div className="bg-[#f7f4ef] p-5">
+                  <p className="text-sm font-medium">Execution modes</p>
+                  <p className="mt-2 text-sm text-black/65">
+                    Scan, click, solve captcha, paginate, and collect.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
+        </section>
 
-          <button
-            onClick={() => handleStart()}
-            className="w-full rounded-md bg-orange-600 px-5 py-2 text-sm font-medium text-black hover:bg-orange-500"
-          >
-            start
-          </button>
-        </div>
-      )}
+        <section
+          id="automation"
+          className="mx-auto max-w-[1600px] px-4 py-16 sm:px-6 lg:px-8"
+        >
+          <div className="grid gap-px border border-black bg-black lg:grid-cols-3">
+            {featureCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <article key={card.title} className="bg-[#f7f4ef] p-8">
+                  <div className="flex h-12 w-12 items-center justify-center border border-black bg-white">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-6 text-2xl font-medium tracking-tight">
+                    {card.title}
+                  </h3>
+                  <p className="mt-4 text-base leading-7 text-black/68">
+                    {card.copy}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
 
-    </div>
+        <section id="developers" className="mx-auto max-w-[1600px] px-4 pb-0 sm:px-6 lg:px-8">
+          <div className="grid border border-black bg-[#f53d00] text-white lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="border-b border-white/35 p-8 lg:border-b-0 lg:border-r lg:p-12">
+              <p className="text-sm uppercase tracking-[0.24em] text-white/70">
+                Developer and operator workflows
+              </p>
+              <h2 className="mt-5 max-w-3xl text-4xl font-medium leading-tight tracking-[-0.05em] sm:text-5xl">
+                Build web scraping systems, workflow automations, and AI-driven browser tasks on one platform.
+              </h2>
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <Show when="signed-out">
+                  <SignUpButton mode="modal">
+                    <button className="inline-flex cursor-pointer items-center justify-center gap-2 border border-white bg-white px-6 py-4 text-base font-semibold text-[#f53d00] transition hover:bg-black hover:text-white">
+                      Get Started
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </SignUpButton>
+                  <SignInButton mode="modal">
+                    <button className="inline-flex cursor-pointer items-center justify-center border border-white px-6 py-4 text-base font-semibold text-white transition hover:bg-white hover:text-[#f53d00]">
+                      Sign in
+                    </button>
+                  </SignInButton>
+                </Show>
+                <Show when="signed-in">
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex items-center justify-center gap-2 border border-white bg-white px-6 py-4 text-base font-semibold text-[#f53d00] transition hover:bg-black hover:text-white"
+                  >
+                    Open dashboard
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Show>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center p-8 lg:p-12">
+              <div className="relative h-64 w-64">
+                <div className="absolute left-8 top-3 h-40 w-40 border-2 border-black bg-[#ff5a1f]" />
+                <div className="absolute left-[88px] top-10 h-40 w-40 border-2 border-black bg-[#2a130d]" />
+                <div className="absolute left-8 top-3 flex h-40 w-40 items-center justify-center border-2 border-black bg-[#ff5a1f] text-[6rem] font-semibold text-white">
+                  B
+                </div>
+                <div className="absolute left-14 top-[176px] h-6 w-48 skew-x-[-35deg] bg-black/45" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <footer id="footer" className="mt-0 bg-[#f53d00] text-white">
+          <div className="mx-auto grid max-w-[1600px] border-x border-white/30 lg:grid-cols-[0.9fr_1.1fr_0.75fr]">
+            <div className="border-b border-white/30 px-8 py-10 lg:border-b-0 lg:border-r" />
+
+            <div>
+              <div className="grid gap-10 border-b border-white/30 px-8 py-12 sm:grid-cols-3">
+                {Object.entries(footerLinks).map(([title, links]) => (
+                  <div key={title}>
+                    <h3 className="text-lg font-semibold">{title}</h3>
+                    <ul className="mt-5 space-y-3 text-lg text-white/92">
+                      {links.map((link) => (
+                        <li key={link}>{link}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-6 border-b border-white/30 px-8 py-8 text-lg sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex gap-8">
+                  <span>Privacy policy</span>
+                  <span>Terms of Service</span>
+                </div>
+                <div className="flex items-center gap-5 text-2xl">
+                  <span>in</span>
+                  <span>x</span>
+                  <span>ig</span>
+                  <span>
+                    <Play className="h-5 w-5 fill-white text-white" />
+                  </span>
+                </div>
+              </div>
+
+              <div className="px-8 py-8">
+                <p className="text-[clamp(5rem,16vw,10rem)] font-semibold leading-none tracking-[-0.08em]">
+                  Browsera
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-end justify-center border-t border-white/30 px-8 py-12 lg:border-l lg:border-t-0">
+              <div className="relative h-56 w-56">
+                <div className="absolute left-4 top-2 h-36 w-36 border-2 border-black bg-[#ff5a1f]" />
+                <div className="absolute left-[68px] top-8 h-36 w-36 border-2 border-black bg-[#240f0a]" />
+                <div className="absolute left-4 top-2 flex h-36 w-36 items-center justify-center border-2 border-black bg-[#ff5a1f] text-[5rem] font-semibold text-white">
+                  B
+                </div>
+                <div className="absolute left-8 top-[156px] h-5 w-40 skew-x-[-34deg] bg-black/45" />
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </main>
   );
 }
-
-
-

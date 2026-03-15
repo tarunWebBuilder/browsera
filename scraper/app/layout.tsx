@@ -1,13 +1,14 @@
 import type React from "react"
 import type { Metadata } from "next"
+import { ClerkProvider } from "@clerk/nextjs"
 import { Geist, Geist_Mono } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
 import "@/styles/globals.css"
+
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Forloop.ai | Webscraping & Automation",
+  title: "Browsera | Webscraping & Automation",
   description: "Modern visual automation platform for webscraping, RPA, and data engineering.",
   generator: "v0.app",
   icons: {
@@ -26,22 +27,17 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased ">
-                {/* <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        > */}
-        {children}
-{/* </ThemeProvider> */}
+      <body className="font-sans antialiased">
+        <ClerkProvider>
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   )

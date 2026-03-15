@@ -1,26 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Play,
-  Flag,
   MoreHorizontal,
-  MousePointer2,
-  Globe,
-  Database,
-  FilterIcon,
-  Plus,
+  Circle,
 } from "lucide-react";
 
 interface Node {
   id: string;
   type: "trigger" | "action" | "logic" | "finish";
-  variant?: "web" | "processing" | "start" | "finish";
+  variant?: string | null;
   label: string;
   x: number;
   y: number;
   icon: any;
+  meta?: Record<string, any>;
   status?: "idle" | "running" | "success";
 }
 
@@ -36,11 +31,28 @@ export function WorkflowCanvas({
   onSelectNode: any;
 }) {
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null); // Added state for node hover
-  const [connections, setConnections] = useState<
-    { from: string; to: string }[]
-  >([]);
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
+  const connections = useMemo(() => {
+    const derived: { from: string; to: string }[] = []
+    const seen = new Set<string>()
+
+    nodes.forEach((node) => {
+      const nextNodeIds = Array.isArray(node.meta?.nextNodeIds)
+        ? node.meta.nextNodeIds
+        : []
+
+      nextNodeIds.forEach((nextId: string) => {
+        const key = `${node.id}:${nextId}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          derived.push({ from: node.id, to: nextId })
+        }
+      })
+    })
+
+    return derived
+  }, [nodes])
 
   const getVariantColor = (variant?: string) => {
     switch (variant) {
@@ -136,11 +148,26 @@ export function WorkflowCanvas({
           onContextMenu={(e) => {
             e.preventDefault();
             if (selectedNode && selectedNode !== node.id) {
-              setConnections((prev) => [
-                ...prev,
-                { from: selectedNode, to: node.id },
-              ]);
-              setSelectedNode(null); // Optionally clear selection after connecting
+              setNodes((prev: Node[]) =>
+                prev.map((current) => {
+                  if (current.id !== selectedNode) {
+                    return current
+                  }
+
+                  const nextNodeIds = Array.isArray(current.meta?.nextNodeIds)
+                    ? current.meta.nextNodeIds
+                    : []
+
+                  return {
+                    ...current,
+                    meta: {
+                      ...(current.meta || {}),
+                      nextNodeIds: Array.from(new Set([...nextNodeIds, node.id])),
+                    },
+                  }
+                })
+              );
+              setSelectedNode(null);
             }
           }}
           style={{ x: node.x, y: node.y }}
@@ -177,7 +204,9 @@ export function WorkflowCanvas({
 
           {/* Connection Ports */}
           <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-blue-500 hover:scale-125 transition-transform cursor-crosshair z-30" />
-          <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-blue-500 hover:scale-125 transition-transform cursor-crosshair z-30" />
+          <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 flex h-3 w-3 items-center justify-center rounded-full bg-white border-2 border-blue-500 hover:scale-125 transition-transform cursor-crosshair z-30">
+            <Circle className="h-1.5 w-1.5 fill-blue-500 text-blue-500" />
+          </div>
         </motion.div>
       ))}
     </div>

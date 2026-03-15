@@ -1,5 +1,11 @@
 # Scrapper-engine
 
+This is uvicorn 
+uvicorn main:app --reload
+
+
+
+
 todo
 Free (or open‑source) options by captcha type, with realism:
 
@@ -8,6 +14,9 @@ Slider captchas: OpenCV contour/template matching; some open-source solvers exis
 Audio captchas (including ReCAPTCHA audio): Download audio and run a speech-to-text model (Vosk, Whisper small), then submit; this is fragile and site-specific, and may violate terms.
 ReCAPTCHA v2/v3, hCaptcha, Turnstile, FunCaptcha: There is no reliable free solver. Open-source “bypass” scripts exist (e.g., using audio endpoints), but they’re unstable, often against ToS, and break frequently.
 Custom math/text captchas rendered as images: same as image/math above with OCR; sometimes regex post-processing improves accuracy.
+
+
+
 
 ## Getting started
 

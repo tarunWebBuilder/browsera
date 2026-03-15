@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -22,7 +22,8 @@ import shutil
 import os
 
 
-from db import users_collection, workflows_collection
+from db import users_collection
+from workflow_store import get_workflow, list_workflows, save_workflow
 
 from auth import hash_password, verify_password, create_access_token
 
@@ -41,8 +42,9 @@ class SignInPayload(BaseModel):
 
 
 class WorkflowPayload(BaseModel):
+    workflowId: Optional[str] = None
     name: str
-    data: Dict[str, Any]
+    nodes: List[Dict[str, Any]]
 
 
 class WorkflowGenerationPayload(BaseModel):
@@ -182,33 +184,43 @@ def create_workflow(
     payload: WorkflowPayload,
     user_email: str = Depends(get_current_user),
 ):
-    print(payload)
-    workflow = {
-        "name": payload.name,
-        "data": payload.data,
-        "owner": user_email,
-    }
-
-    result = workflows_collection.insert_one(workflow)
+    try:
+        workflow = save_workflow(
+            owner_email=user_email,
+            workflow_id=payload.workflowId,
+            name=payload.name,
+            nodes=payload.nodes,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
     return {
-        "id": str(result.inserted_id),
-        "message": "Workflow created",
+        "id": workflow["id"],
+        "name": workflow["name"],
+        "nodes": workflow["nodes"],
+        "message": "Workflow saved",
     }
 
 @app.get("/workflow")
 def get_workflows(user_email: str = Depends(get_current_user)):
-    print(user_email)
-    workflows = workflows_collection.find({"owner": user_email})
+    return list_workflows(user_email)
 
-    return [
-        {
-            "id": str(w["_id"]),
-            "name": w["name"],
-            "data": w["data"],
-        }
-        for w in workflows
-    ]
+
+@app.get("/workflow/{workflow_id}")
+def get_workflow_by_id(
+    workflow_id: str,
+    user_email: str = Depends(get_current_user),
+):
+    try:
+        workflow = get_workflow(user_email, workflow_id)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    return workflow
 
 
 @app.post("/createNewWorkflow")

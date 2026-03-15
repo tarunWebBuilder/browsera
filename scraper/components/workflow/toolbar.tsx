@@ -3,10 +3,11 @@
 import { Menu, FileText, FolderOpen, Save, Play, Pause, Share2, Code, Code2, DeleteIcon } from "lucide-react"
 type WorkflowToolbarProps = {
   runMultipleNodes: () => void,
-  deleteNode: () => void
+  deleteNode: () => void,
+  saveWorkflow: () => void
 }
 
-export function WorkflowToolbar({ runMultipleNodes,deleteNode }: WorkflowToolbarProps) {
+export function WorkflowToolbar({ runMultipleNodes, deleteNode, saveWorkflow }: WorkflowToolbarProps) {
   return (
     <div className="h-12 border-b border-[var(--forloop-border)] bg-white flex items-center px-4 gap-1">
       <button className="w-9 h-9 flex items-center justify-center rounded hover:bg-gray-100 transition-colors">
@@ -21,7 +22,10 @@ export function WorkflowToolbar({ runMultipleNodes,deleteNode }: WorkflowToolbar
         <DeleteIcon className="w-4 h-4 text-gray-600" />
       </button>
 
-      <button className="w-9 h-9 flex items-center justify-center rounded hover:bg-gray-100 transition-colors">
+      <button
+        onClick={saveWorkflow}
+        className="w-9 h-9 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
+      >
         <Save className="w-4 h-4 text-gray-600" />
       </button>
 

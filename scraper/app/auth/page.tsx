@@ -1,141 +1,50 @@
-"use client"
+import Link from "next/link"
+import { SignIn, SignUp } from "@clerk/nextjs"
 
-import * as Label from "@radix-ui/react-label"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+type AuthPageProps = {
+  searchParams: Promise<{
+    mode?: string
+  }>
+}
 
-export default function AuthPage() {
-  const router = useRouter()
-  const [mode, setMode] = useState<"signin" | "signup">("signin")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    console.log('hello');
-    
-    setLoading(true)
-    setError("")
-
-    const endpoint =
-      mode === "signin"
-        ? process.env.NEXT_PUBLIC_BACKEND_URL+"/signin"
-        : process.env.NEXT_PUBLIC_BACKEND_URL+"/signup"
-
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      })
-      console.log(res);
-      
-
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail || "Authentication failed")
-      }
-
-      const data = await res.json()
-
-      // Only signin returns token
-      if (mode === "signin") {
-        document.cookie = `auth-token=${data.access_token}; path=/`
-        router.replace("/")
-      } else {
-        // After signup → switch to signin
-        setMode("signin")
-      }
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+export default async function AuthPage({ searchParams }: AuthPageProps) {
+  const { mode } = await searchParams
+  const isSignUp = mode === "sign-up"
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-sm">
-        <h1 className="mb-6 text-center text-xl font-semibold">
-          {mode === "signin" ? "Sign in" : "Sign up"}
-        </h1>
+    <main className="min-h-screen bg-[#f7f4ef] text-black">
+      <div className="min-h-screen bg-[linear-gradient(rgba(0,0,0,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.06)_1px,transparent_1px)] bg-[size:88px_88px] px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl border border-black bg-white">
+          <div className="grid lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="border-b border-black bg-[#f53d00] p-8 text-white lg:border-b-0 lg:border-r lg:p-12">
+              <Link href="/" className="text-3xl font-semibold tracking-tight">
+                Browsera
+              </Link>
+              <p className="mt-10 text-sm uppercase tracking-[0.24em] text-white/70">
+                Authentication
+              </p>
+              <h1 className="mt-4 text-4xl font-medium leading-tight tracking-[-0.04em] sm:text-5xl">
+                {isSignUp
+                  ? "Create your first Browsera account."
+                  : "Sign in to continue into the dashboard."}
+              </h1>
+              <p className="mt-6 max-w-md text-lg leading-8 text-white/85">
+                Clerk is running in keyless mode here, so you can test signup and sign-in
+                immediately without wiring keys first.
+              </p>
+            </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          {/* Email */}
-          <div className="space-y-1">
-            <Label.Root htmlFor="email" className="text-sm font-medium">
-              Email
-            </Label.Root>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:border-black"
-            />
+            <div className="flex items-center justify-center p-6 sm:p-10 lg:p-12">
+              <div className="w-full max-w-md">
+                {isSignUp ? (
+                  <SignUp signInUrl="/auth" />
+                ) : (
+                  <SignIn signUpUrl="/auth?mode=sign-up" />
+                )}
+              </div>
+            </div>
           </div>
-
-          {/* Password */}
-          <div className="space-y-1">
-            <Label.Root htmlFor="password" className="text-sm font-medium">
-              Password
-            </Label.Root>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:border-black"
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-red-600">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="h-10 w-full rounded-md bg-orange-600 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
-          >
-            {loading
-              ? "Please wait..."
-              : mode === "signin"
-              ? "Sign in"
-              : "Create account"}
-          </button>
-        </form>
-
-        {/* Toggle */}
-        <p className="mt-4 text-center text-sm text-gray-600">
-          {mode === "signin" ? (
-            <>
-              Don’t have an account?{" "}
-              <button
-                onClick={() => setMode("signup")}
-                className="font-medium text-orange-600 hover:underline"
-              >
-                Sign up
-              </button>
-            </>
-          ) : (
-            <>
-              Already have an account?{" "}
-              <button
-                onClick={() => setMode("signin")}
-                className="font-medium text-orange-600 hover:underline"
-              >
-                Sign in
-              </button>
-            </>
-          )}
-        </p>
+        </div>
       </div>
     </main>
   )

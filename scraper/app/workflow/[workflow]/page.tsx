@@ -3,6 +3,7 @@
 import { WorkflowHeader } from "@/components/workflow/header";
 import { WorkflowToolbar } from "@/components/workflow/toolbar";
 import {
+  SIDEBAR_ACTIONS,
   WorkflowMenuPanel,
   WorkflowSidebar,
 } from "@/components/workflow/sidebar";
@@ -12,7 +13,9 @@ import { ActionTemplate, Node } from "@/types/webscraper";
 import { WorkflowInspector } from "@/components/inspector";
 import VariablesPanel from "@/components/variables";
 import { AnalyzeWithAIModal } from "@/components/analyzewithai";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Flag, Play } from "lucide-react";
 
 
 
@@ -28,6 +31,9 @@ interface Variable {
 
 
 export default function WorkflowDashboard() {
+  const router = useRouter();
+  const params = useParams<{ workflow: string }>();
+  const workflowIdFromRoute = params?.workflow;
   const [expandedItem, setExpandedItem] = useState(null);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -40,12 +46,142 @@ export default function WorkflowDashboard() {
   const [workflowPrompt, setWorkflowPrompt] = useState("");
   const [isGeneratingWorkflow, setIsGeneratingWorkflow] = useState(false);
   const [generationError, setGenerationError] = useState("");
+  const [workflowId, setWorkflowId] = useState<string | null>(
+    workflowIdFromRoute && workflowIdFromRoute !== "new" ? workflowIdFromRoute : null
+  );
+  const [workflowName, setWorkflowName] = useState("");
+  const [isSavingWorkflow, setIsSavingWorkflow] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [isLoadingWorkflow, setIsLoadingWorkflow] = useState(
+    !!workflowIdFromRoute && workflowIdFromRoute !== "new"
+  );
 
-  const getAuthToken = () =>
-    document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("auth-token="))
-      ?.split("=")[1];
+  const actionTemplateMap = Object.values(SIDEBAR_ACTIONS).reduce<Record<string, any>>(
+    (acc, actions) => {
+      actions.forEach((action) => {
+        acc[action.id] = action
+      })
+      return acc
+    },
+    {}
+  )
+
+  const hydrateNode = (node: Node): Node => {
+    if (node.type === "trigger") {
+      return {
+        ...node,
+        icon: Play,
+        variant: node.variant ?? "start",
+      }
+    }
+    if (node.type === "finish") {
+      return {
+        ...node,
+        icon: Flag,
+        variant: node.variant ?? "finish",
+      }
+    }
+
+    const template = node.actionTemplateId
+      ? actionTemplateMap[node.actionTemplateId]
+      : null
+
+    return {
+      ...node,
+      icon: template?.icon ?? node.icon,
+      variant: node.variant ?? template?.section ?? null,
+      config: node.config ?? {},
+      inputs: node.inputs ?? {},
+      meta: node.meta ?? {},
+    }
+  }
+
+  const hydrateNodes = (incomingNodes: Node[]) =>
+    incomingNodes.map((node) => hydrateNode(node))
+
+  useEffect(() => {
+    async function loadWorkflow() {
+      if (!workflowIdFromRoute || workflowIdFromRoute === "new") {
+        setIsLoadingWorkflow(false);
+        return;
+      }
+
+      setIsLoadingWorkflow(true);
+      setSaveError("");
+
+      try {
+        const response = await fetch(`/api/workflows/${workflowIdFromRoute}`, {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          const message = await response.text();
+          throw new Error(message || "Failed to load workflow");
+        }
+
+        const data = await response.json();
+        setWorkflowId(data.id);
+        setWorkflowName(data.name || "");
+        setNodes(hydrateNodes(Array.isArray(data.nodes) ? data.nodes : []));
+      } catch (err: any) {
+        setSaveError(err?.message ?? "Failed to load workflow");
+      } finally {
+        setIsLoadingWorkflow(false);
+      }
+    }
+
+    loadWorkflow();
+  }, [workflowIdFromRoute]);
+
+  const handleSaveWorkflow = async () => {
+    const nextName =
+      workflowName.trim() ||
+      window.prompt("Name this workflow before saving:", workflowName || "")?.trim() ||
+      "";
+
+    if (!nextName) {
+      setSaveError("Workflow name is required.");
+      return;
+    }
+
+    setWorkflowName(nextName);
+    setIsSavingWorkflow(true);
+    setSaveError("");
+
+    try {
+      const response = await fetch(`/api/workflows`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          workflowId,
+          name: nextName,
+          nodes,
+        }),
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || "Failed to save workflow");
+      }
+
+      const data = await response.json();
+      setWorkflowId(data.id);
+      setWorkflowName(data.name || nextName);
+      if (workflowIdFromRoute === "new" && data.id) {
+        router.replace(`/workflow/${data.id}`);
+      }
+    } catch (err: any) {
+      setSaveError(err?.message ?? "Failed to save workflow");
+    } finally {
+      setIsSavingWorkflow(false);
+    }
+  };
 
   const handleWorkflowCreation = async () => {
     if (!workflowPrompt.trim()) {
@@ -55,26 +191,20 @@ export default function WorkflowDashboard() {
 
     setIsGeneratingWorkflow(true);
     setGenerationError("");
-
-    const token = getAuthToken();
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Accept: "application/json",
     };
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/createNewWorkflow`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers,
-          body: JSON.stringify({ prompt: workflowPrompt }),
-        }
-      );
+      const response = await fetch(`/api/workflows/generate`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          prompt: workflowPrompt,
+          workflowName,
+        }),
+      });
 
       if (!response.ok) {
         const errorMessage = await response.text();
@@ -82,7 +212,7 @@ export default function WorkflowDashboard() {
       }
 
       const data = await response.json();
-      const aiNodes: Node[] = Array.isArray(data.nodes) ? data.nodes : [];
+      const aiNodes: Node[] = hydrateNodes(Array.isArray(data.nodes) ? data.nodes : []);
 
       if (aiNodes.length) {
         setNodes((prev: Node[]) => [...prev, ...aiNodes]);
@@ -145,13 +275,20 @@ export default function WorkflowDashboard() {
 
       <div className="flex-1 flex flex-col min-w-0">
         <WorkflowHeader
-        
+          workflowName={workflowName}
+          onWorkflowNameChange={setWorkflowName}
+          isSaving={isSavingWorkflow}
+          onSave={handleSaveWorkflow}
         />
         <WorkflowToolbar
           runMultipleNodes={runMultipleNodes}
           deleteNode={deleteSelectedNode}
+          saveWorkflow={handleSaveWorkflow}
         />
         <div className="border-b border-[var(--forloop-border)] bg-white px-4 py-3 space-y-2">
+          {isLoadingWorkflow ? (
+            <p className="text-xs text-gray-500">Loading workflow...</p>
+          ) : null}
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-gray-500">
               Ask the agent to turn text into workflow nodes.
@@ -172,6 +309,9 @@ export default function WorkflowDashboard() {
           />
           {generationError && (
             <p className="text-xs text-red-600">{generationError}</p>
+          )}
+          {saveError && (
+            <p className="text-xs text-red-600">{saveError}</p>
           )}
         </div>
         <WorkflowCanvas
