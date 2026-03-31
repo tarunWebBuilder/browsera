@@ -1,0 +1,58 @@
+{
+  "version": "v1.0.0",
+  "entity": {
+    "type": "individual",
+    "role": "maintainer",
+    "name": "Tarun Pahade",
+    "email": "tarunpahade55@gmail.com",
+    "description": "Full-stack developer building Scrapper Engine, an AI-powered web scraping and automation platform.",
+    "webpageUrl": {
+      "url": "https://github.com/tarunWebBuilder"
+    }
+  },
+  "projects": [
+    {
+      "guid": "scrapper-engine",
+      "name": "Scrapper Engine",
+      "description": "An AI-powered web scraping and automation engine supporting browser automation, PDF extraction, OCR, database integrations, and workflow generation via a FastAPI backend.",
+      "webpageUrl": {
+        "url": "https://github.com/tarunWebBuilder/scraper"
+      },
+      "repositoryUrl": {
+        "url": "https://github.com/tarunWebBuilder/scraper"
+      },
+      "licenses": ["MIT"],
+      "tags": ["scraper", "automation", "ai", "playwright", "fastapi", "web-scraping", "ocr", "open-source"]
+    }
+  ],
+  "funding": {
+    "channels": [
+      {
+        "guid": "zerodha-rainmatter",
+        "type": "foundation",
+        "address": "https://rainmatter.com",
+        "description": "Zerodha Rainmatter — a fintech and open-source fund backing technology innovation in India"
+      }
+    ],
+    "plans": [
+      {
+        "guid": "core-development",
+        "status": "active",
+        "name": "Core Development",
+        "description": "Backend engine development, browser automation, AI workflow generation, OCR pipeline, and multi-database integration.",
+        "amount": 10000,
+        "currency": "INR",
+        "frequency": "monthly"
+      },
+      {
+        "guid": "one-time-support",
+        "status": "active",
+        "name": "One-Time Support",
+        "description": "One-time contribution to support infrastructure, hosting, and feature development.",
+        "amount": 50000,
+        "currency": "INR",
+        "frequency": "one-time"
+      }
+    ]
+  }
+}
