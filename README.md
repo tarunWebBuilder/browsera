@@ -1,6 +1,14 @@
 # Scrapper-engine
 
-This is uvicorn 
+## Demo
+
+[![Watch Demo](https://img.shields.io/badge/▶%20Watch%20Demo-Click%20Here-blue?style=for-the-badge&logo=video&logoColor=white)](https://tarun-nitin-pahade.neetorecord.com/watch/f4fd1fb8867d30b39661)
+
+> Click the badge above to watch a full walkthrough of the scraper engine in action.
+
+---
+
+This is uvicorn
 uvicorn main:app --reload
 
 
