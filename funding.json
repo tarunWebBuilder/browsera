@@ -29,9 +29,15 @@
     "channels": [
       {
         "guid": "zerodha-rainmatter",
-        "type": "foundation",
+        "type": "other",
         "address": "https://rainmatter.com",
         "description": "Zerodha Rainmatter — a fintech and open-source fund backing technology innovation in India"
+      },
+      {
+        "guid": "cheque-payment",
+        "type": "cheque",
+        "address": "Tarun Pahade, payable at par",
+        "description": "Send a cheque in favour of 'Tarun Pahade' to support development of Scrapper Engine"
       }
     ],
     "plans": [
